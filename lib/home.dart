@@ -10,7 +10,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List posts = [];
+  List products = [];
   bool isLoading = true;
 
   @override
@@ -19,71 +19,64 @@ class _HomePageState extends State<HomePage> {
     fetchData();
   }
 
+  Future<void> fetchData() async {
+    try {
+      final response = await http.get(
+        Uri.parse("http://10.0.2.2:8000/Product/"),
+      );
 
-Future<void> fetchData() async {
-  final response = await http.get(
-    Uri.parse('http://10.0.2.2:8000/Product/'),
-  );
-
-  print("Status Code: ${response.statusCode}");
-  print("Response Body: ${response.body}");
-
-  if (response.statusCode == 200) {
-    setState(() {
-      posts = json.decode(response.body);
-      isLoading = false;
-    });
-  } else {
-    setState(() {
-      isLoading = false;
-    });
+      if (response.statusCode == 200) {
+        setState(() {
+          products = json.decode(response.body);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        throw Exception("Failed to load products");
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      print("Error fetching data: $e");
+    }
   }
-}
-
-
-
-  // Future<void> fetchData() async {
-  //   final response = await http.get(
-  //     Uri.parse('http://10.0.2.2:8000/Product/'),
-  //   );
-
-
-
-  //   if (response.statusCode == 200) {
-  //     setState(() {
-  //       posts = json.decode(response.body);
-  //       isLoading = false;
-  //     });
-  //   } else {
-  //     setState(() {
-  //       isLoading = false;
-  //     });
-  //     throw Exception("Failed to load data");
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("API Data"),
+        title: const Text("Product List"),
         centerTitle: true,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: posts.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 6),
-                  child: ListTile(
-                    title: Text(posts[index]['title']),
-                    subtitle: Text(posts[index]['body']),
-                  ),
-                );
-              },
-            ),
+          : products.isEmpty
+              ? const Center(child: Text("No products found"))
+              : ListView.builder(
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    final product = products[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      child: ListTile(
+                        title: Text(product['product_name'] ?? 'No name'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Details: ${product['product_details']}"),
+                            Text("Price: ₹${product['product_price']}"),
+                            Text("Category: ${product['product_category']}"),
+                            Text("Available: ${product['is_available'] ? 'Yes' : 'No'}"),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
